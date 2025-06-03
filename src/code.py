@@ -115,8 +115,8 @@ def template_setup():
             "req": "note.template",
             "file": "h2s.qo",
             "body": {
-                "voltage": 0.0,
-                "h2s_ppm": 0.0
+                "voltage": 14.1,
+                "h2s_ppm": 14.1
             }
         })
         return True
@@ -218,17 +218,13 @@ def sensor_warmup():
 
 # === POWER MANAGEMENT ===
 def enter_deep_sleep(duration_ms):
-    print(f"Entering deep sleep for {duration_ms/1000} seconds...")
+    print(f"Entering sleep for {duration_ms/1000} seconds...")
     wdt.feed()
     gc.collect()
 
-    # Configure wake up timer
-    rtc = machine.RTC()
-    rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
-    rtc.alarm(rtc.ALARM0, duration_ms)
-
-    # Enter deep sleep
-    machine.deepsleep()
+    # Note: Raspberry Pi Pico doesn't support true deep sleep with RTC wake
+    # Using lightsleep instead for lower power consumption
+    machine.lightsleep(duration_ms)
 
 # === MAIN LOOP ===
 # Perform sensor warmup on boot
