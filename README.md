@@ -1,1 +1,1 @@
-# h22-sensor
+# h2s-sensor
