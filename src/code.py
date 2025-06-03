@@ -112,7 +112,7 @@ def template_setup():
         return False
     try:
         card.Transaction({
-            "req": "template.add",
+            "req": "note.template",
             "file": "h2s.qo",
             "body": {
                 "voltage": 0.0,
