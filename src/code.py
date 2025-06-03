@@ -94,7 +94,7 @@ def notecard_init():
     try:
         card.Transaction({
             "req": "hub.set",
-            "product": "com.your-company.your-product",  # Replace with your ProductUID
+            "product": PRODUCT_UID,
             "mode": "periodic",
             "outbound": NOTECARD_OUTBOUND_INTERVAL,
             "inbound": NOTECARD_INBOUND_INTERVAL,
