@@ -3,6 +3,7 @@ import time
 import json
 import gc
 import notecard
+import os
 
 # === CONFIGURATION ===
 ADC_PIN = 26                      # GP26 / ADC0
@@ -12,7 +13,7 @@ NOTECARD_I2C_ADDRESS = 0x17
 SAMPLE_DURATION = 20              # in seconds
 SAMPLE_INTERVAL = 0.5             # in seconds
 READ_INTERVAL = 300               # in seconds (5 minutes)
-PRODUCT_UID = "com.blues.h2s_sensor"  # Replace with your ProductUID
+PRODUCT_UID = "com.outlook.jcforsythe1:h2s"  # Replace with your ProductUID
 
 NOTECARD_OUTBOUND_INTERVAL = 1440 # in minutes (24 hours = 1440 minutes)
 NOTECARD_INBOUND_INTERVAL = 1440  # in minutes (24 hours = 1440 minutes)
@@ -70,19 +71,23 @@ def save_to_buffer(voltage, ppm):
 def load_and_clear_buffer():
     readings = []
     try:
-        with open(BUFFER_FILE, 'r') as f:
-            lines = f.readlines()
-            for line in lines[-MAX_BUFFER_SIZE:]:  # Keep only last MAX_BUFFER_SIZE readings
-                parts = line.strip().split(',')
-                if len(parts) == 3:
-                    readings.append({
-                        'timestamp': float(parts[0]),
-                        'voltage': float(parts[1]),
-                        'ppm': float(parts[2])
-                    })
-        # Clear the buffer file
-        with open(BUFFER_FILE, 'w') as f:
-            f.write('')
+        # Check if file exists before trying to read it
+        if BUFFER_FILE in os.listdir():
+            with open(BUFFER_FILE, 'r') as f:
+                lines = f.readlines()
+                for line in lines[-MAX_BUFFER_SIZE:]:  # Keep only last MAX_BUFFER_SIZE readings
+                    parts = line.strip().split(',')
+                    if len(parts) == 3:
+                        readings.append({
+                            'timestamp': float(parts[0]),
+                            'voltage': float(parts[1]),
+                            'ppm': float(parts[2])
+                        })
+            # Clear the buffer file only if it existed
+            with open(BUFFER_FILE, 'w') as f:
+                f.write('')
+        else:
+            print(f"Buffer file {BUFFER_FILE} doesn't exist yet - starting fresh")
     except Exception as e:
         print(f"Failed to load buffer: {e}")
     return readings
