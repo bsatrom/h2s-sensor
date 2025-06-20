@@ -15,7 +15,7 @@ SAMPLE_INTERVAL = 0.5             # in seconds
 READ_INTERVAL = 300               # in seconds (5 minutes)
 PRODUCT_UID = "com.outlook.jcforsythe1:h2s"  # Replace with your ProductUID
 
-NOTECARD_OUTBOUND_INTERVAL = 1440 # in minutes (24 hours = 1440 minutes)
+NOTECARD_OUTBOUND_INTERVAL = 60 # in minutes (24 hours = 1440 minutes)
 NOTECARD_INBOUND_INTERVAL = 1440  # in minutes (24 hours = 1440 minutes)
 
 SENSOR_WARMUP_TIME = 30           # Sensor warmup time in seconds
@@ -87,7 +87,7 @@ def load_and_clear_buffer():
             with open(BUFFER_FILE, 'w') as f:
                 f.write('')
         else:
-            print(f"Buffer file {BUFFER_FILE} doesn't exist yet - starting fresh")
+            print(f"Buffer file {BUFFER_FILE} doesn't exist yet")
     except Exception as e:
         print(f"Failed to load buffer: {e}")
     return readings
@@ -127,6 +127,21 @@ def template_setup():
         return True
     except Exception as e:
         print(f"Failed to setup template: {e}")
+        return False
+    
+# === TEMPLATE SETUP ===
+def battery_monitoring_setup():
+    if card is None:
+        return False
+    try:
+        card.Transaction({
+            "req": "card.power",
+            "minutes": 60,
+            "reset": True
+        })
+        return True
+    except Exception as e:
+        print(f"Failed to set card.power configuration: {e}")
         return False
 
 
@@ -239,6 +254,7 @@ sensor_warmup()
 if card:
     notecard_init()
     template_setup()
+    battery_monitoring_setup()
 
 # Main measurement loop
 while True:
