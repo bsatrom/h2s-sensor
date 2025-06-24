@@ -15,14 +15,14 @@ SAMPLE_INTERVAL = 0.5             # in seconds
 READ_INTERVAL = 300               # in seconds (5 minutes)
 PRODUCT_UID = "com.outlook.jcforsythe1:h2s"  # Replace with your ProductUID
 
-NOTECARD_OUTBOUND_INTERVAL = 60 # in minutes (24 hours = 1440 minutes)
+NOTECARD_OUTBOUND_INTERVAL = 360 # in minutes (4 times per day = every 6 hours)
 NOTECARD_INBOUND_INTERVAL = 1440  # in minutes (24 hours = 1440 minutes)
 
 SENSOR_WARMUP_TIME = 30           # Sensor warmup time in seconds
 MAX_RETRIES = 3                   # Max retries for failed operations
 BUFFER_FILE = "sensor_buffer.txt" # Local buffer file
 MAX_BUFFER_SIZE = 100             # Max buffered readings
-WATCHDOG_TIMEOUT = 8000           # Watchdog timeout in ms
+WATCHDOG_TIMEOUT = 8000           # Watchdog timeout in ms (max ~8.3s for RP2040)
 
 # === POWER SAVING ===
 machine.freq(48000000)            # Lower CPU frequency for battery life
@@ -239,12 +239,22 @@ def sensor_warmup():
 # === POWER MANAGEMENT ===
 def enter_deep_sleep(duration_ms):
     print(f"Entering sleep for {duration_ms/1000} seconds...")
-    wdt.feed()
     gc.collect()
 
-    # Note: Raspberry Pi Pico doesn't support true deep sleep with RTC wake
-    # Using lightsleep instead for lower power consumption
-    machine.lightsleep(duration_ms)
+    # Split sleep into chunks to feed watchdog
+    chunk_size = 5000  # 5 seconds per chunk
+    remaining = duration_ms
+    
+    while remaining > 0:
+        sleep_time = min(chunk_size, remaining)
+        try:
+            machine.lightsleep(sleep_time)
+        except Exception as e:
+            print(f"Lightsleep failed: {e}, using time.sleep instead")
+            time.sleep(sleep_time / 1000)
+        
+        wdt.feed()  # Feed watchdog after each chunk
+        remaining -= sleep_time
 
 # === MAIN LOOP ===
 # Perform sensor warmup on boot
@@ -260,11 +270,12 @@ if card:
 while True:
     try:
         wdt.feed()
-        print("Waking up. Sampling sensor...")
+        current_time = time.time()
+        print(f"\n[{current_time}] Waking up. Starting {SAMPLE_DURATION}s sensor sampling...")
 
         avg_voltage = read_average_voltage()
         h2s_ppm = convert_voltage_to_ppm(avg_voltage)
-        print("Voltage:", avg_voltage, "V | H₂S:", h2s_ppm, "ppm")
+        print(f"[{time.time()}] Sampling complete. Voltage: {avg_voltage:.3f}V | H₂S: {h2s_ppm:.2f} ppm")
 
         send_to_notecard(avg_voltage, h2s_ppm)
 
