@@ -34,6 +34,8 @@ led.value(0)                      # Turn off onboard LED
 # Initialize watchdog timer
 wdt = machine.WDT(timeout=WATCHDOG_TIMEOUT)
 
+last_read_time = 0
+
 # Initialize I2C with error handling
 try:
     i2c = machine.I2C(0,
@@ -277,7 +279,11 @@ while True:
         h2s_ppm = convert_voltage_to_ppm(avg_voltage)
         print(f"[{time.time()}] Sampling complete. Voltage: {avg_voltage:.3f}V | H₂S: {h2s_ppm:.2f} ppm")
 
-        send_to_notecard(avg_voltage, h2s_ppm)
+        # check last read time to make sure SAMPLE_DURATION has elapsed before we send a note 
+        if (current_time - last_read_time > READ_INTERVAL):
+            print("Sending latest reading to Notecard...\n")
+            send_to_notecard(avg_voltage, h2s_ppm)
+            last_read_time = current_time
 
         # Calculate sleep duration
         sleep_duration = READ_INTERVAL - SAMPLE_DURATION
